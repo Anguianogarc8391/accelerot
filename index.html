@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Instagram Grid</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0a0a0a;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* ── Toolbar ── */
+    #toolbar {
+      -webkit-app-region: drag;
+      background: #141414;
+      border-bottom: 1px solid #2a2a2a;
+      padding: 8px 16px 8px 80px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-shrink: 0;
+      height: 44px;
+    }
+
+    #toolbar * { -webkit-app-region: no-drag; }
+
+    #toolbar h1 {
+      font-size: 13px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #e1306c, #fd1d1d, #fcb045);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-right: 6px;
+    }
+
+    #toolbar label {
+      font-size: 12px;
+      color: #666;
+    }
+
+    #toolbar input[type="number"] {
+      width: 44px;
+      background: #222;
+      border: 1px solid #383838;
+      color: #ddd;
+      padding: 4px 6px;
+      border-radius: 5px;
+      font-size: 12px;
+      text-align: center;
+    }
+    #toolbar input[type="number"]:focus { outline: none; border-color: #e1306c; }
+
+    .toolbar-btn {
+      background: #e1306c;
+      color: white;
+      border: none;
+      padding: 5px 13px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      transition: background 0.15s;
+    }
+    .toolbar-btn:hover { background: #c0265a; }
+
+    .toolbar-btn.ghost {
+      background: #222;
+      color: #aaa;
+      border: 1px solid #383838;
+    }
+    .toolbar-btn.ghost:hover { background: #2e2e2e; color: #ddd; }
+
+    .toolbar-btn.active {
+      background: #22c55e;
+      color: #fff;
+    }
+    .toolbar-btn.active:hover { background: #16a34a; }
+
+    #toolbar .sep {
+      width: 1px;
+      height: 20px;
+      background: #2a2a2a;
+    }
+
+    #toolbar .spacer { flex: 1; }
+
+
+    /* ── Grid ── */
+    #grid {
+      flex: 1;
+      height: 0;
+      display: grid;
+      overflow: hidden;
+    }
+
+    /* ── Cell ── */
+    .cell {
+      position: relative;
+      background: #111;
+      border: 1px solid #1e1e1e;
+      overflow: hidden;
+    }
+
+    /* webview sized explicitly in JS — never display:none or it won't measure */
+    .cell webview {
+      position: absolute;
+      top: 0;
+      left: 0;
+      visibility: hidden;
+    }
+    .cell.loaded webview { visibility: visible; }
+
+    /* hover overlay header */
+    .cell-bar {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      padding: 6px 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: linear-gradient(to bottom, rgba(0,0,0,.75) 0%, transparent 100%);
+      z-index: 10;
+      opacity: 0;
+      transition: opacity 0.18s;
+      pointer-events: none;
+    }
+    .cell:hover .cell-bar { opacity: 1; pointer-events: all; }
+
+    .cell-bar .uname {
+      font-size: 12px;
+      font-weight: 600;
+      color: #fff;
+      text-shadow: 0 1px 3px rgba(0,0,0,.9);
+    }
+
+    .cell-bar .bar-actions { display: flex; gap: 4px; }
+
+    .icon-btn {
+      background: rgba(255,255,255,.15);
+      backdrop-filter: blur(4px);
+      border: none;
+      color: white;
+      width: 26px;
+      height: 26px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+    }
+    .icon-btn:hover { background: rgba(255,255,255,.28); }
+
+    /* empty cell */
+    .cell-empty {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .cell-empty:hover { background: #181818; }
+
+    .cell-empty .plus-icon {
+      width: 40px; height: 40px;
+      border: 2px dashed #383838;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      color: #444;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .cell-empty:hover .plus-icon { border-color: #666; color: #888; }
+
+    .cell-empty p { font-size: 11px; color: #444; }
+    .cell-empty:hover p { color: #666; }
+
+    .cell.loaded .cell-empty { display: none; }
+
+    /* loading spinner overlay */
+    .cell-loading {
+      position: absolute;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: #111;
+      z-index: 5;
+    }
+    .cell.loading .cell-loading { display: flex; }
+    .cell.loaded .cell-loading { display: none; }
+
+    .spinner {
+      width: 28px; height: 28px;
+      border: 2px solid #2a2a2a;
+      border-top-color: #e1306c;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Modal ── */
+    #modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.65);
+      backdrop-filter: blur(4px);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    #modal-overlay.open { display: flex; }
+
+    #modal {
+      background: #1c1c1c;
+      border: 1px solid #333;
+      border-radius: 12px;
+      padding: 24px;
+      width: 340px;
+      box-shadow: 0 24px 60px rgba(0,0,0,.6);
+    }
+
+    #modal h2 { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+    #modal p.hint { font-size: 11px; color: #555; margin-bottom: 16px; }
+
+    #modal input[type="text"] {
+      width: 100%;
+      background: #252525;
+      border: 1px solid #3a3a3a;
+      color: #eee;
+      padding: 10px 12px;
+      border-radius: 7px;
+      font-size: 14px;
+      margin-bottom: 16px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    #modal input[type="text"]:focus { border-color: #e1306c; }
+    #modal input[type="text"]::placeholder { color: #444; }
+
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .modal-actions .spacer { flex: 1; }
+
+    .modal-btn {
+      padding: 8px 16px;
+      border-radius: 7px;
+      border: none;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: background 0.15s;
+    }
+    .modal-btn.primary { background: #e1306c; color: #fff; font-weight: 700; }
+    .modal-btn.primary:hover { background: #c0265a; }
+    .modal-btn.secondary { background: #252525; color: #888; }
+    .modal-btn.secondary:hover { background: #303030; color: #bbb; }
+    .modal-btn.danger { background: transparent; color: #c0265a; padding: 8px 6px; }
+    .modal-btn.danger:hover { color: #e1306c; }
+  </style>
+</head>
+<body>
+  <div id="toolbar">
+    <h1>Insta Grid</h1>
+    <label>Rows</label>
+    <input type="number" id="inp-rows" value="2" min="1" max="6">
+    <label>Cols</label>
+    <input type="number" id="inp-cols" value="2" min="1" max="6">
+    <button class="toolbar-btn" id="btn-apply">Apply</button>
+    <div class="spacer"></div>
+    <button class="toolbar-btn ghost" id="btn-autoscroll">▶ Autoscroll</button>
+    <div class="sep"></div>
+    <button class="toolbar-btn ghost" id="btn-reload-all">↺ Reload All</button>
+  </div>
+
+  <div id="grid"></div>
+
+  <div id="modal-overlay">
+    <div id="modal">
+      <h2>Set Account</h2>
+      <p class="hint">Enter a username or paste an Instagram URL</p>
+      <input type="text" id="modal-input" placeholder="e.g. natgeo or instagram.com/natgeo">
+      <div class="modal-actions">
+        <button class="modal-btn danger" id="btn-clear">Clear cell</button>
+        <div class="spacer"></div>
+        <button class="modal-btn secondary" id="btn-cancel">Cancel</button>
+        <button class="modal-btn primary" id="btn-load">Load</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>
